@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [showSchemaModal, setShowSchemaModal] = useState(false)
   const [copiedSchema, setCopiedSchema] = useState(false)
   const router = useRouter()
+  const loginDisabled = CloneStore.isLoginDisabled()
 
   useEffect(() => {
     const init = async () => {
@@ -69,6 +70,10 @@ export default function DashboardPage() {
   }, [router])
 
   const handleLogout = async () => {
+    if (CloneStore.isLoginDisabled()) {
+      router.push('/')
+      return
+    }
     await CloneStore.signOut()
     router.push('/')
   }
@@ -158,7 +163,11 @@ CREATE TABLE IF NOT EXISTS chat_history (
                 Saruto AI
               </Link>
               <span className="text-xs px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-400">
-                {user?.isGuest ? 'Local Sandbox' : 'Cloud Sync'}
+                {loginDisabled
+                  ? 'Direct Access (Login Disabled)'
+                  : user?.isGuest
+                  ? 'Local Sandbox'
+                  : 'Cloud Sync'}
               </span>
             </div>
 
@@ -174,7 +183,7 @@ CREATE TABLE IF NOT EXISTS chat_history (
                 onClick={handleLogout}
                 className="text-sm text-zinc-400 hover:text-white transition-colors"
               >
-                Sign Out
+                {loginDisabled ? 'Exit to Home' : 'Sign Out'}
               </button>
             </div>
           </div>

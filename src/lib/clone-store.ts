@@ -193,7 +193,46 @@ function setLocalData<T>(key: string, value: T): void {
 }
 
 export const CloneStore = {
+  isLoginDisabled(): boolean {
+    const envVal = process.env.NEXT_PUBLIC_LOGIN ?? process.env.LOGIN
+    if (envVal !== undefined && envVal !== null) {
+      const normalized = String(envVal).trim().toLowerCase()
+      if (
+        normalized === 'false' ||
+        normalized === '0' ||
+        normalized === 'disabled' ||
+        normalized === 'off' ||
+        normalized === 'no'
+      ) {
+        return true
+      }
+      if (
+        normalized === 'true' ||
+        normalized === '1' ||
+        normalized === 'enabled' ||
+        normalized === 'on' ||
+        normalized === 'yes'
+      ) {
+        return false
+      }
+    }
+    return false
+  },
+
   async getCurrentUser(): Promise<CloneUser | null> {
+    if (this.isLoginDisabled()) {
+      const existing = getLocalData<CloneUser | null>(STORAGE_KEYS.GUEST_USER, null)
+      if (existing) return existing
+
+      const defaultUser: CloneUser = {
+        id: 'creator_workspace',
+        email: 'creator@saruto.local',
+        isGuest: true,
+      }
+      setLocalData(STORAGE_KEYS.GUEST_USER, defaultUser)
+      return defaultUser
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user && user.email) {

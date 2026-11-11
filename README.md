@@ -58,6 +58,10 @@ LIVEKIT_URL=wss://saruto-clone.livekit.cloud
 LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=secret_key_needs_to_be_long_enough_123456789
 NEXT_PUBLIC_LIVEKIT_URL=wss://saruto-clone.livekit.cloud
+
+# Authentication Mode (Set to False to bypass login and open workspace directly)
+LOGIN=False
+NEXT_PUBLIC_LOGIN=False
 ```
 
 3. Run the development server:

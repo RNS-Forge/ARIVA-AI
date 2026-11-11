@@ -1,6 +1,18 @@
 import Link from 'next/link'
 
+const isLoginDisabled = () => {
+  const envVal = process.env.NEXT_PUBLIC_LOGIN ?? process.env.LOGIN
+  if (envVal !== undefined && envVal !== null) {
+    const norm = String(envVal).trim().toLowerCase()
+    return norm === 'false' || norm === '0' || norm === 'disabled' || norm === 'off' || norm === 'no'
+  }
+  return false
+}
+
 export default function Home() {
+  const loginDisabled = isLoginDisabled()
+  const primaryHref = loginDisabled ? '/dashboard' : '/login'
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col justify-between">
       {/* Navigation */}
@@ -14,17 +26,19 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-6">
+            {!loginDisabled && (
+              <Link
+                href="/login"
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
             <Link
-              href="/login"
-              className="text-sm text-zinc-400 hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/login"
+              href={primaryHref}
               className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-zinc-200 transition-colors"
             >
-              Create Your Clone
+              {loginDisabled ? 'Enter Workspace' : 'Create Your Clone'}
             </Link>
           </div>
         </div>
@@ -51,10 +65,10 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
-              href="/login"
+              href={primaryHref}
               className="w-full sm:w-auto bg-white text-black font-semibold text-base px-8 py-3.5 rounded-xl hover:bg-zinc-200 transition-colors"
             >
-              Initialize Your Clone
+              {loginDisabled ? 'Enter Workspace' : 'Initialize Your Clone'}
             </Link>
             <Link
               href="#architecture"
@@ -305,7 +319,7 @@ export default function Home() {
                 Pure monochrome blank theme. Zero emojis across all modules.
               </span>
               <Link
-                href="/login"
+                href={primaryHref}
                 className="bg-white text-black font-semibold text-xs px-5 py-2.5 rounded-lg hover:bg-zinc-200 transition-colors"
               >
                 Launch Workspace &rarr;

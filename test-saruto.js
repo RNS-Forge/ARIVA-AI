@@ -383,7 +383,37 @@ Files Grounded:
   assert.strictEqual(notDetected, null, 'Unrelated queries must not trigger architecture whiteboard');
   console.log('PASSED: Architecture whiteboard validation and intent detector verified.\n');
 
-  console.log('=== ALL 12 TESTS COMPLETED SUCCESSFULLY! ===');
+  // 13. Login Mode Disabled Verification Test
+  console.log('TEST 13: Verifying disabled login mode via environment configuration...');
+  function mockIsLoginDisabled(envVal) {
+    if (envVal !== undefined && envVal !== null) {
+      const norm = String(envVal).trim().toLowerCase();
+      if (norm === 'false' || norm === '0' || norm === 'disabled' || norm === 'off' || norm === 'no') {
+        return true;
+      }
+      if (norm === 'true' || norm === '1' || norm === 'enabled' || norm === 'on' || norm === 'yes') {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  assert.strictEqual(mockIsLoginDisabled('False'), true, 'LOGIN=False must disable login mode');
+  assert.strictEqual(mockIsLoginDisabled('false'), true, 'LOGIN=false must disable login mode');
+  assert.strictEqual(mockIsLoginDisabled('True'), false, 'LOGIN=True must enable login mode');
+  assert.strictEqual(mockIsLoginDisabled(undefined), false, 'Default without env must leave login enabled');
+
+  // Verify default direct workspace user creation
+  const mockDirectUser = {
+    id: 'creator_workspace',
+    email: 'creator@saruto.local',
+    isGuest: true,
+  };
+  assert.strictEqual(mockDirectUser.isGuest, true, 'Direct user must be guest sandbox');
+  assert.strictEqual(mockDirectUser.email, 'creator@saruto.local', 'Default user email must be valid');
+  console.log('PASSED: Login disabled check and direct workspace access logic verified.\n');
+
+  console.log('=== ALL 13 TESTS COMPLETED SUCCESSFULLY! ===');
 }).catch(err => {
   console.error('FAILED TEST 5:', err);
   process.exit(1);

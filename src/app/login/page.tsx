@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { CloneStore } from '@/lib/clone-store'
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
+  const loginDisabled = CloneStore.isLoginDisabled()
+
+  useEffect(() => {
+    if (CloneStore.isLoginDisabled()) {
+      router.replace('/dashboard')
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,6 +96,52 @@ export default function LoginPage() {
     } finally {
       setGuestLoading(false)
     }
+  }
+
+  if (loginDisabled) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col justify-between">
+        <header className="border-b border-zinc-800 px-6 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <Link href="/" className="text-xl font-bold tracking-tight">
+              Saruto AI
+            </Link>
+            <Link href="/" className="text-sm text-zinc-400 hover:text-white transition-colors">
+              Back to Home
+            </Link>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md border border-zinc-800 bg-zinc-950 rounded-2xl p-8 text-center space-y-5 shadow-2xl">
+            <div className="w-10 h-10 mx-auto rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 block mb-1">
+                Direct Workspace Access
+              </span>
+              <h2 className="text-xl font-bold">Login Mode Disabled</h2>
+              <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+                Authentication is disabled via configuration (LOGIN=False). Direct workspace access is active.
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="inline-block w-full bg-white text-black font-semibold text-xs py-3 rounded-lg hover:bg-zinc-200 transition-colors"
+            >
+              Enter Dashboard &rarr;
+            </Link>
+          </div>
+        </main>
+
+        <footer className="border-t border-zinc-900 px-6 py-4 text-center text-xs text-zinc-600">
+          Saruto AI - Autonomous Identity Architecture
+        </footer>
+      </div>
+    )
   }
 
   return (

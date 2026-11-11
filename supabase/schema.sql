@@ -143,3 +143,51 @@ CREATE POLICY "Users can insert own chat history" ON chat_history
 
 CREATE POLICY "Users can delete own chat history" ON chat_history
   FOR DELETE USING (auth.uid() = user_id);
+
+-- Recruiter candidate preferences
+CREATE TABLE IF NOT EXISTS recruiter_settings (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  target_roles TEXT[] DEFAULT '{}',
+  work_preference TEXT DEFAULT 'Remote',
+  min_compensation TEXT DEFAULT '',
+  availability TEXT DEFAULT 'Immediate',
+  preferred_stack TEXT DEFAULT '',
+  deal_breakers TEXT DEFAULT '',
+  auto_respond BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  UNIQUE(user_id)
+);
+
+-- Inbound recruiter inquiries and client leads
+CREATE TABLE IF NOT EXISTS recruiter_leads (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  recruiter_name TEXT NOT NULL,
+  company TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role_title TEXT DEFAULT '',
+  compensation_offered TEXT DEFAULT '',
+  fit_score INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'archived')),
+  notes TEXT DEFAULT '',
+  transcript JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE INDEX IF NOT EXISTS idx_recruiter_settings_user_id ON recruiter_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_recruiter_leads_user_id ON recruiter_leads(user_id);
+CREATE INDEX IF NOT EXISTS idx_recruiter_leads_created_at ON recruiter_leads(created_at);
+
+ALTER TABLE recruiter_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recruiter_leads ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own recruiter settings" ON recruiter_settings
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can upsert own recruiter settings" ON recruiter_settings
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own recruiter leads" ON recruiter_leads
+  FOR ALL USING (auth.uid() = user_id);

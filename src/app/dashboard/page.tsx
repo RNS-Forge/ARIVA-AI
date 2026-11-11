@@ -19,6 +19,9 @@ export default function DashboardPage() {
   const [voiceCount, setVoiceCount] = useState(0)
   const [voiceDuration, setVoiceDuration] = useState(0)
   const [socialCount, setSocialCount] = useState(0)
+  const [leadsCount, setLeadsCount] = useState(0)
+  const [repoCount, setRepoCount] = useState(0)
+  const [voicemailCount, setVoicemailCount] = useState(0)
   const [latestTrait, setLatestTrait] = useState<PersonalityQuestion | null>(null)
   const [showSchemaModal, setShowSchemaModal] = useState(false)
   const [copiedSchema, setCopiedSchema] = useState(false)
@@ -49,6 +52,15 @@ export default function DashboardPage() {
 
       const sList = await CloneStore.getSocialLinks()
       setSocialCount(sList.length)
+
+      const lList = await CloneStore.getRecruiterLeads()
+      setLeadsCount(lList.length)
+
+      const rList = await CloneStore.getIngestedRepositories()
+      setRepoCount(rList.length)
+
+      const vListAsync = await CloneStore.getVoiceVoicemails()
+      setVoicemailCount(vListAsync.length)
 
       setLoading(false)
     }
@@ -194,6 +206,15 @@ CREATE TABLE IF NOT EXISTS chat_history (
                 <span>Voice Call Clone (LiveKit)</span>
               </Link>
               <Link
+                href="/dashboard/recruiter"
+                className="border border-zinc-700 bg-zinc-900 text-white font-medium text-sm px-5 py-3 rounded-lg hover:border-zinc-500 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>Recruiter Agent</span>
+              </Link>
+              <Link
                 href="/dashboard/chat"
                 className="border border-zinc-700 bg-zinc-900 text-white font-medium text-sm px-5 py-3 rounded-lg hover:border-zinc-500 transition-colors flex items-center gap-2"
               >
@@ -279,7 +300,7 @@ CREATE TABLE IF NOT EXISTS chat_history (
                 <span>&rarr;</span>
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* LiveKit Voice Priority */}
               <Link
                 href="/dashboard/voice-chat"
@@ -413,6 +434,72 @@ CREATE TABLE IF NOT EXISTS chat_history (
                 </div>
                 <div className="mt-4 flex items-center justify-between text-[11px] text-zinc-400 group-hover:text-white">
                   <span>{socialCount} links</span>
+                  <span>Open &rarr;</span>
+                </div>
+              </Link>
+
+              {/* Recruiter Agent & Voice Voicemails */}
+              <Link
+                href="/dashboard/recruiter"
+                className="border border-zinc-800 bg-zinc-950/60 p-5 rounded-xl hover:border-zinc-700 transition-all group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3 group-hover:bg-zinc-800 transition-colors">
+                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-white text-sm mb-1">Recruiter &amp; Voicemails</h3>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Screen inbound recruiters, communicate salary, and listen to recorded voice notes.
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-[11px] text-zinc-400 group-hover:text-white">
+                  <span>{leadsCount} leads, {voicemailCount} audio</span>
+                  <span>Open &rarr;</span>
+                </div>
+              </Link>
+
+              {/* GitHub Knowledge Ingestion */}
+              <Link
+                href="/dashboard/knowledge"
+                className="border border-zinc-800 bg-zinc-950/60 p-5 rounded-xl hover:border-zinc-700 transition-all group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3 group-hover:bg-zinc-800 transition-colors">
+                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-white text-sm mb-1">Knowledge Ingestion</h3>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Ingest GitHub repositories, code modules, and documents into clone memory.
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-[11px] text-zinc-400 group-hover:text-white">
+                  <span>{repoCount} repos synced</span>
+                  <span>Open &rarr;</span>
+                </div>
+              </Link>
+
+              {/* Interactive Architecture Whiteboard */}
+              <Link
+                href="/dashboard/whiteboard"
+                className="border border-zinc-800 bg-zinc-950/60 p-5 rounded-xl hover:border-zinc-700 transition-all group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3 group-hover:bg-zinc-800 transition-colors">
+                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-white text-sm mb-1">Architecture Whiteboard</h3>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Interactive system component graphs with real-time layer and node inspection.
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-[11px] text-zinc-400 group-hover:text-white">
+                  <span>Interactive Diagrams</span>
                   <span>Open &rarr;</span>
                 </div>
               </Link>

@@ -59,6 +59,7 @@ export default function ExportPage() {
 
   const generateConfigJson = async () => {
     const prompt = await CloneStore.generateClonePersonaPrompt()
+    const recruiterSettings = await CloneStore.getRecruiterSettings()
     return JSON.stringify(
       {
         cloneName,
@@ -73,7 +74,13 @@ export default function ExportPage() {
         voiceAcoustics: {
           pitch: 1.0,
           rate: 1.0,
-          provider: settings?.provider || 'local-twin',
+          provider: settings?.voice_cloning?.provider || settings?.provider || 'local-twin',
+        },
+        recruiterScreening: {
+          targetRoles: recruiterSettings.target_roles,
+          workPreference: recruiterSettings.work_preference,
+          minCompensation: recruiterSettings.min_compensation,
+          availability: recruiterSettings.availability,
         },
       },
       null,

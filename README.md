@@ -4,12 +4,16 @@ Transform yourself into an autonomous AI agent. Clone your personality, speech p
 
 ## System Features
 
+- **GitHub Repository & Document Ingestion Engine**: Ingest public GitHub repositories, README documentation, architecture summaries, and source files directly into clone knowledge memory.
+- **Async Voice Voicemail & Inquiries**: Visitors and recruiters can record spoken voice messages through the standalone widget or recruiter studio. Review audio playback and transcripts in your inbox.
+- **Interactive Architecture Whiteboard**: Visual system architecture component graphs. Visitors and engineers can click nodes to inspect latency budgets, network protocols, and infrastructure tiers with simultaneous voice narration.
 - **LiveKit Voice-First Twin**: Real-time voice interaction priority with selectable acoustic visualizer animations (Frequency Bars, Orbital Rings, Waveform, Neural Orb) and live background transcript streaming.
+- **Cloud Voice Cloning (ElevenLabs) & Acoustics**: Calibrate ElevenLabs neural speech synthesis with custom voice IDs, stability, and similarity sliders alongside in-browser recording.
+- **Autonomous Playwright Profile Tour**: Dynamic Playwright code synthesis and server-side headless Chromium execution that captures live viewport frames and narrates your experience.
+- **Recruiter & Inbound Client Screening Agent**: 24/7 candidate screening agent that communicates salary baselines, calculates mutual fit scores (0-99%), and collects qualified leads in an inbox.
 - **Personality Playground**: Train your digital twin on your authentic beliefs, communication style, ethics, conflict handling, and humor across 6 structured categories.
-- **Voice & Acoustic Studio**: In-browser audio recording and file uploading with speech calibration (pitch, speed, and Web Speech API playback).
 - **Knowledge & Social Grounding**: Connect GitHub, X, LinkedIn, YouTube, and custom writing samples to synthesize an accurate digital bio.
 - **Interactive Twin Chat**: Real-time conversation with your clone. Supports Google Gemini 1.5 Flash, xAI Grok-Beta, and a built-in neural simulator that works offline.
-- **Playwright Autonomous Social Profile Tour**: When asked about your background, experience, or projects, the clone writes dynamic Playwright code tailored to your profiles, opens the page, auto-scrolls through sections, and narrates in voice as you explaining your career.
 - **Standalone Clone Export & Embed Studio**: Download a turnkey standalone ZIP package with a sample portfolio, or embed your clone into external websites (HTML, React, Next.js, Webflow, WordPress) with a single script tag.
 - **Progress & Fidelity Tracking**: Weighted metrics calculating overall clone fidelity with status badges (Nascent, Developing, Proficient, High Fidelity).
 - **Zero Emojis Enforced**: Pure monochrome blank theme with strict minimalist typography and clean SVG iconography.
@@ -68,10 +72,13 @@ npm run dev
 
 - **Voice Priority Studio**: `/dashboard/voice-chat`
 - **Interactive Chat & Mirror**: `/dashboard/chat`
-- **Playwright Profile Tour**: `/dashboard/profile-tour`
+- **Architecture Whiteboard**: `/dashboard/whiteboard`
+- **Knowledge & Repo Ingestion**: `/dashboard/knowledge`
+- **Playwright Profile Tour & Chromium Runner**: `/dashboard/profile-tour`
+- **Recruiter & Inbound Voicemails**: `/dashboard/recruiter`
 - **Export & Embed Studio**: `/dashboard/export`
 - **Personality Playground**: `/dashboard/training`
-- **Voice & Acoustic Studio**: `/dashboard/voice`
+- **Voice Studio & ElevenLabs**: `/dashboard/voice`
 - **Social Profiles & Bio**: `/dashboard/social`
 - **AI Provider Settings**: `/dashboard/api-key`
 
@@ -122,7 +129,7 @@ When someone asks: *"Walk me through your LinkedIn experience"* or *"Show me you
 
 ## Automated Testing
 
-Run the automated test suite verifying zero emojis, system prompt synthesis, LiveKit token minting, and Playwright dynamic code generation:
+Run the automated test suite verifying zero emojis, system prompt synthesis, LiveKit token minting, Playwright dynamic code generation, real headless Chromium frame capture, and recruiter fit score calculations:
 
 ```bash
 npm test

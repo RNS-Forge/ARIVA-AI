@@ -17,6 +17,16 @@ export default function VoicePage() {
   const [speechRate, setSpeechRate] = useState(1.0)
   const [speaking, setSpeaking] = useState(false)
 
+  // Cloud Voice Cloning (ElevenLabs) state
+  const [elevenApiKey, setElevenApiKey] = useState('')
+  const [elevenVoiceId, setElevenVoiceId] = useState('21m00Tcm4TlvDq8ikWAM')
+  const [stability, setStability] = useState(0.5)
+  const [similarityBoost, setSimilarityBoost] = useState(0.75)
+  const [synthesizingCloneVoice, setSynthesizingCloneVoice] = useState(false)
+  const [clonedAudioUrl, setClonedAudioUrl] = useState('')
+  const [savingElevenSettings, setSavingElevenSettings] = useState(false)
+  const [elevenStatus, setElevenStatus] = useState('')
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -25,20 +35,6 @@ export default function VoicePage() {
   useEffect(() => {
     loadVoiceSamples()
   }, [])
-
-  useEffect(() => {
-    if (recording) {
-      timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1)
-      }, 1000)
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current)
-      setRecordingTime(0)
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [recording])
 
   const loadVoiceSamples = async () => {
     const user = await CloneStore.getCurrentUser()
@@ -49,6 +45,64 @@ export default function VoicePage() {
 
     const data = await CloneStore.getVoiceSamples()
     setSamples(data)
+
+    const settings = await CloneStore.getSettings()
+    if (settings?.voice_cloning) {
+      setElevenApiKey(settings.voice_cloning.elevenlabs_api_key || '')
+      setElevenVoiceId(settings.voice_cloning.elevenlabs_voice_id || '21m00Tcm4TlvDq8ikWAM')
+      if (settings.voice_cloning.stability !== undefined) setStability(settings.voice_cloning.stability)
+      if (settings.voice_cloning.similarity_boost !== undefined) setSimilarityBoost(settings.voice_cloning.similarity_boost)
+    }
+  }
+
+  const handleSaveElevenSettings = async () => {
+    setSavingElevenSettings(true)
+    setElevenStatus('')
+    try {
+      await CloneStore.saveVoiceCloningSettings({
+        provider: elevenApiKey ? 'elevenlabs' : 'browser',
+        elevenlabs_api_key: elevenApiKey.trim(),
+        elevenlabs_voice_id: elevenVoiceId.trim(),
+        stability,
+        similarity_boost: similarityBoost,
+      })
+      setElevenStatus('Voice cloning settings saved successfully.')
+    } catch (err: any) {
+      setElevenStatus(err.message || 'Failed to save voice settings')
+    } finally {
+      setSavingElevenSettings(false)
+    }
+  }
+
+  const handleSynthesizeCloudVoice = async () => {
+    setSynthesizingCloneVoice(true)
+    setElevenStatus('')
+    try {
+      const res = await fetch('/api/voice/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: testSpeechText,
+          voiceId: elevenVoiceId,
+          apiKey: elevenApiKey,
+          stability,
+          similarityBoost,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.audioUrl) {
+        setClonedAudioUrl(data.audioUrl)
+        setElevenStatus('Cloned voice synthesized successfully.')
+        const audio = new Audio(data.audioUrl)
+        audio.play().catch(() => {})
+      } else {
+        setElevenStatus(data.message || data.error || 'Voice synthesis error')
+      }
+    } catch (err: any) {
+      setElevenStatus(err.message || 'Could not connect to voice synthesis API')
+    } finally {
+      setSynthesizingCloneVoice(false)
+    }
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -368,6 +422,125 @@ export default function VoicePage() {
               className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
               placeholder="Type phrase to test clone voice..."
             />
+          </div>
+
+          {/* Cloud Voice Cloning Studio (ElevenLabs) */}
+          <div className="border border-zinc-800 bg-zinc-950 p-6 rounded-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold">Cloud Voice Cloning (ElevenLabs)</h2>
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                    Neural Audio
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Connect your ElevenLabs API key and cloned voice ID for high-fidelity speech synthesis.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveElevenSettings}
+                  disabled={savingElevenSettings}
+                  className="text-xs border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded text-zinc-300 transition-colors disabled:opacity-50"
+                >
+                  {savingElevenSettings ? 'Saving...' : 'Save Voice Config'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSynthesizeCloudVoice}
+                  disabled={synthesizingCloneVoice}
+                  className="text-xs bg-white text-black font-semibold px-4 py-1.5 rounded hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                >
+                  {synthesizingCloneVoice ? 'Synthesizing...' : 'Generate Cloned Audio'}
+                </button>
+              </div>
+            </div>
+
+            {elevenStatus && (
+              <div className="bg-zinc-900/80 border border-zinc-800 text-zinc-300 p-3 rounded-lg text-xs font-mono">
+                {elevenStatus}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  ElevenLabs API Key
+                </label>
+                <input
+                  type="password"
+                  value={elevenApiKey}
+                  onChange={(e) => setElevenApiKey(e.target.value)}
+                  placeholder="xi-..."
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                />
+                <span className="text-[11px] text-zinc-600 mt-1 block">
+                  Stored securely. When empty, system falls back to browser synthesis.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  Cloned Voice ID
+                </label>
+                <input
+                  type="text"
+                  value={elevenVoiceId}
+                  onChange={(e) => setElevenVoiceId(e.target.value)}
+                  placeholder="e.g. 21m00Tcm4TlvDq8ikWAM"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+                />
+                <span className="text-[11px] text-zinc-600 mt-1 block">
+                  Your custom cloned voice ID or ElevenLabs library preset.
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-zinc-900">
+              <div>
+                <div className="flex justify-between text-xs text-zinc-400 mb-1">
+                  <span>Voice Stability</span>
+                  <span>{Math.round(stability * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.05"
+                  value={stability}
+                  onChange={(e) => setStability(parseFloat(e.target.value))}
+                  className="w-full accent-white"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs text-zinc-400 mb-1">
+                  <span>Similarity Boost</span>
+                  <span>{Math.round(similarityBoost * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.05"
+                  value={similarityBoost}
+                  onChange={(e) => setSimilarityBoost(parseFloat(e.target.value))}
+                  className="w-full accent-white"
+                />
+              </div>
+            </div>
+
+            {clonedAudioUrl && (
+              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-2">
+                <span className="text-xs font-medium text-zinc-300 block">
+                  Last Synthesized Audio Sample:
+                </span>
+                <audio controls src={clonedAudioUrl} className="w-full h-8" />
+              </div>
+            )}
           </div>
 
           {/* Stored Samples */}

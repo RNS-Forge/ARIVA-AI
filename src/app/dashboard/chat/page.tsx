@@ -1,18 +1,26 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { CloneStore, ChatMessage, UserSettings, SocialLink, PersonalityQuestion } from '@/lib/clone-store'
+import {
+  CloneStore,
+  ChatMessage,
+  UserSettings,
+  SocialLink,
+  PersonalityQuestion,
+  ArchitectureDiagram,
+} from '@/lib/clone-store'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LiveKitVoiceRoom } from '@/components/livekit-voice-room'
 import { PlaywrightService, PlaywrightTourResult } from '@/lib/playwright-service'
 import { PlaywrightProfileViewer } from '@/components/playwright-profile-viewer'
+import { ArchitectureWhiteboard } from '@/components/architecture-whiteboard'
 
 const SUGGESTED_QUESTIONS = [
   'Who are you and what do you stand for?',
+  'Explain our system architecture with the interactive whiteboard',
   'Walk me through your LinkedIn experience using Playwright',
   'Show me your GitHub projects and open source work',
-  'What is your communication philosophy?',
 ]
 
 export default function ChatPage() {
@@ -29,6 +37,7 @@ export default function ChatPage() {
   const [socials, setSocials] = useState<SocialLink[]>([])
   const [personality, setPersonality] = useState<PersonalityQuestion[]>([])
   const [activeTour, setActiveTour] = useState<PlaywrightTourResult | null>(null)
+  const [activeArchitecture, setActiveArchitecture] = useState<ArchitectureDiagram | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -82,7 +91,19 @@ export default function ChatPage() {
       const userMsg = await CloneStore.addChatMessage('user', textToSend)
       setMessages((prev) => [...prev, userMsg])
 
-      // 2. Check if user asked about social profiles / experience / projects
+      // 2. Check if user asked about system architecture whiteboard
+      const archMatch = await CloneStore.detectArchitectureIntent(textToSend)
+      if (archMatch) {
+        setActiveArchitecture(archMatch)
+        const narration = `Opening the interactive architecture whiteboard for ${archMatch.title}. You can click individual system nodes to inspect latency, protocols, and implementation components.`
+        const assistantMsg = await CloneStore.addChatMessage('assistant', narration)
+        setMessages((prev) => [...prev, assistantMsg])
+        handleSpeak(assistantMsg.id, narration)
+        setSending(false)
+        return
+      }
+
+      // 3. Check if user asked about social profiles / experience / projects
       const user = await CloneStore.getCurrentUser()
       const userName = user?.email ? user.email.split('@')[0] : 'The Creator'
 
@@ -103,7 +124,7 @@ export default function ChatPage() {
         aiReply = await CloneStore.askAiProvider(textToSend, messages, settings)
       }
 
-      // 3. Add assistant message
+      // 4. Add assistant message
       const assistantMsg = await CloneStore.addChatMessage('assistant', aiReply)
       setMessages((prev) => [...prev, assistantMsg])
 
@@ -230,6 +251,16 @@ export default function ChatPage() {
               onClose={() => setActiveTour(null)}
               onNarrationPlay={(t) => handleSpeak('active-tour-step', t)}
             />
+          )}
+
+          {/* Active Architecture Whiteboard Viewport if query triggered */}
+          {activeArchitecture && (
+            <div className="border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-950 p-4">
+              <ArchitectureWhiteboard
+                initialDiagram={activeArchitecture}
+                onClose={() => setActiveArchitecture(null)}
+              />
+            </div>
           )}
 
           {messages.length === 0 ? (

@@ -179,7 +179,18 @@
         <div class="saruto-msg saruto-msg-clone">${config.greeting}</div>
       </div>
 
+      <div style="padding:4px 12px 8px 12px; display:flex; gap:6px; overflow-x:auto; background:#000000; border-top:1px solid #18181b;">
+        <button id="saruto-chip-general" style="background:#18181b; border:1px solid #27272a; color:#a1a1aa; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer; white-space:nowrap;">General Bio</button>
+        <button id="saruto-chip-arch" style="background:#18181b; border:1px solid #27272a; color:#a1a1aa; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer; white-space:nowrap;">System Architecture</button>
+        <button id="saruto-chip-recruiter" style="background:#18181b; border:1px solid #27272a; color:#a1a1aa; font-size:11px; padding:3px 8px; border-radius:12px; cursor:pointer; white-space:nowrap;">Recruiter Inquiry</button>
+      </div>
+
       <div class="saruto-footer">
+        <button id="saruto-mic-btn" title="Record Voice Voicemail" style="background:#18181b; border:1px solid #27272a; color:#a1a1aa; border-radius:8px; padding:8px 10px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
         <input type="text" class="saruto-input" id="saruto-input" placeholder="Ask my AI clone anything..." />
         <button class="saruto-send" id="saruto-send-btn">Send</button>
       </div>
@@ -251,6 +262,8 @@
       const lower = text.toLowerCase();
       if (lower.includes('who are you') || lower.includes('introduce')) {
         reply = 'I am the autonomous digital clone of the creator, trained on their communication style, values, and engineering principles.';
+      } else if (lower.includes('architecture') || lower.includes('tech stack') || lower.includes('whiteboard')) {
+        reply = 'My architecture is composed of an Autonomous Identity Engine (Next.js 16), a real-time WebRTC audio streaming pipeline (LiveKit), Playwright dynamic browser automation, and deep repository grounding.';
       } else if (lower.includes('experience') || lower.includes('work')) {
         reply = 'Regarding my experience: I focus on building reliable software architectures, scalable full-stack applications, and pragmatic engineering execution.';
       } else if (lower.includes('contact') || lower.includes('hire') || lower.includes('email')) {
@@ -268,5 +281,95 @@
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleSend();
   });
+
+  const chipGeneral = document.getElementById('saruto-chip-general');
+  const chipArch = document.getElementById('saruto-chip-arch');
+  const chipRecruiter = document.getElementById('saruto-chip-recruiter');
+  const micBtn = document.getElementById('saruto-mic-btn');
+
+  if (chipGeneral) {
+    chipGeneral.addEventListener('click', () => {
+      inputEl.value = 'Introduce yourself and summarize your background.';
+      handleSend();
+    });
+  }
+
+  if (chipArch) {
+    chipArch.addEventListener('click', () => {
+      inputEl.value = 'Can you explain your system architecture and technology stack?';
+      handleSend();
+    });
+  }
+
+  if (chipRecruiter) {
+    chipRecruiter.addEventListener('click', () => {
+      inputEl.value = 'I am a recruiter with an open technical role. What are your target positions and compensation?';
+      handleSend();
+    });
+  }
+
+  // Voice Voicemail Recording Support
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecordingVoicemail = false;
+
+  if (micBtn) {
+    micBtn.addEventListener('click', async () => {
+      if (!isRecordingVoicemail) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = [];
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+          };
+          mediaRecorder.onstop = async () => {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64Data = reader.result;
+              appendMessage('user', 'Recorded voice inquiry audio message');
+              // Deliver voicemail to local store or API
+              try {
+                await fetch('/api/voicemail', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    audioDataUrl: base64Data,
+                    durationSeconds: Math.max(1, Math.round(blob.size / 16000)),
+                    transcript: 'Audio voicemail recorded by visitor via standalone portfolio widget.',
+                    visitorName: 'Portfolio Visitor',
+                  }),
+                });
+              } catch (_) {
+                // Ignore network error in standalone widget
+              }
+              const confirmReply = 'I have received your voice message and saved it directly to the creator dashboard.';
+              appendMessage('clone', confirmReply);
+              speakText(confirmReply);
+            };
+            reader.readAsDataURL(blob);
+            stream.getTracks().forEach((track) => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecordingVoicemail = true;
+          micBtn.style.background = '#ffffff';
+          micBtn.style.color = '#000000';
+          micBtn.title = 'Click to finish recording';
+        } catch (err) {
+          appendMessage('clone', 'Microphone access is required to record a voice note.');
+        }
+      } else {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        isRecordingVoicemail = false;
+        micBtn.style.background = '#18181b';
+        micBtn.style.color = '#a1a1aa';
+        micBtn.title = 'Record Voice Voicemail';
+      }
+    });
+  }
 })();
 

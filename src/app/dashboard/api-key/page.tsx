@@ -21,16 +21,23 @@ export default function ApiKeyPage() {
   }, [])
 
   const loadSettings = async () => {
-    const user = await CloneStore.getCurrentUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    try {
+      let user = await CloneStore.getCurrentUser()
+      if (!user && CloneStore.isLoginDisabled()) {
+        user = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-    const settings = await CloneStore.getSettings()
-    if (settings) {
-      setSavedSettings(settings)
-      setProvider(settings.provider)
+      const settings = await CloneStore.getSettings()
+      if (settings) {
+        setSavedSettings(settings)
+        setProvider(settings.provider)
+      }
+    } catch (err) {
+      console.error('Error loading API settings:', err)
     }
   }
 

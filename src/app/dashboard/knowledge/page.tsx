@@ -36,20 +36,27 @@ export default function KnowledgePage() {
   }, [])
 
   const initData = async () => {
-    const currentUser = await CloneStore.getCurrentUser()
-    if (!currentUser) {
-      router.push('/login')
-      return
+    try {
+      let currentUser = await CloneStore.getCurrentUser()
+      if (!currentUser && CloneStore.isLoginDisabled()) {
+        currentUser = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!currentUser) {
+        router.push('/login')
+        return
+      }
+      setUser(currentUser)
+
+      const repoList = await CloneStore.getIngestedRepositories()
+      setRepositories(repoList)
+
+      const snippetList = await CloneStore.getKnowledgeSnippets()
+      setSnippets(snippetList)
+    } catch (err) {
+      console.error('Error loading knowledge data:', err)
+    } finally {
+      setLoading(false)
     }
-    setUser(currentUser)
-
-    const repoList = await CloneStore.getIngestedRepositories()
-    setRepositories(repoList)
-
-    const snippetList = await CloneStore.getKnowledgeSnippets()
-    setSnippets(snippetList)
-
-    setLoading(false)
   }
 
   const handleIngestRepo = async (e: React.FormEvent) => {
@@ -142,6 +149,13 @@ export default function KnowledgePage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin"></div>
           <span className="text-zinc-500 text-sm font-mono">Loading Knowledge Ingestion Engine...</span>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="text-[11px] text-zinc-500 hover:text-white underline mt-2 transition-colors"
+          >
+            Enter Studio Directly
+          </button>
         </div>
       </div>
     )

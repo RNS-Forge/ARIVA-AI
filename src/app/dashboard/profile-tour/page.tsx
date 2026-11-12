@@ -23,22 +23,29 @@ export default function ProfileTourPage() {
   }, [])
 
   const initData = async () => {
-    const user = await CloneStore.getCurrentUser()
-    if (!user) {
-      router.push('/login')
-      return
+    try {
+      let user = await CloneStore.getCurrentUser()
+      if (!user && CloneStore.isLoginDisabled()) {
+        user = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      const sLinks = await CloneStore.getSocialLinks()
+      setSocials(sLinks)
+      if (sLinks.length > 0) {
+        setSelectedPlatform(sLinks[0].platform)
+      }
+
+      const pData = await CloneStore.getPersonality()
+      setPersonality(pData)
+    } catch (err) {
+      console.error('Error loading profile tour:', err)
+    } finally {
+      setLoading(false)
     }
-
-    const sLinks = await CloneStore.getSocialLinks()
-    setSocials(sLinks)
-    if (sLinks.length > 0) {
-      setSelectedPlatform(sLinks[0].platform)
-    }
-
-    const pData = await CloneStore.getPersonality()
-    setPersonality(pData)
-
-    setLoading(false)
   }
 
   const handleRunTour = async (e?: React.FormEvent) => {
@@ -88,6 +95,13 @@ export default function ProfileTourPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin"></div>
           <span className="text-zinc-500 text-sm font-mono">Loading Profile Tour Engine...</span>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="text-[11px] text-zinc-500 hover:text-white underline mt-2 transition-colors"
+          >
+            Enter Tour Directly
+          </button>
         </div>
       </div>
     )

@@ -72,14 +72,21 @@ export default function TrainingPage() {
   }, [])
 
   const loadData = async () => {
-    const user = await CloneStore.getCurrentUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    try {
+      let user = await CloneStore.getCurrentUser()
+      if (!user && CloneStore.isLoginDisabled()) {
+        user = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-    const data = await CloneStore.getPersonality()
-    setQuestions(data)
+      const data = await CloneStore.getPersonality()
+      setQuestions(data)
+    } catch (err) {
+      console.error('Error loading personality traits:', err)
+    }
   }
 
   const handlePickCurated = (q: string, cat: string) => {

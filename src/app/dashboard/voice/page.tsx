@@ -37,21 +37,28 @@ export default function VoicePage() {
   }, [])
 
   const loadVoiceSamples = async () => {
-    const user = await CloneStore.getCurrentUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    try {
+      let user = await CloneStore.getCurrentUser()
+      if (!user && CloneStore.isLoginDisabled()) {
+        user = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-    const data = await CloneStore.getVoiceSamples()
-    setSamples(data)
+      const data = await CloneStore.getVoiceSamples()
+      setSamples(data)
 
-    const settings = await CloneStore.getSettings()
-    if (settings?.voice_cloning) {
-      setElevenApiKey(settings.voice_cloning.elevenlabs_api_key || '')
-      setElevenVoiceId(settings.voice_cloning.elevenlabs_voice_id || '21m00Tcm4TlvDq8ikWAM')
-      if (settings.voice_cloning.stability !== undefined) setStability(settings.voice_cloning.stability)
-      if (settings.voice_cloning.similarity_boost !== undefined) setSimilarityBoost(settings.voice_cloning.similarity_boost)
+      const settings = await CloneStore.getSettings()
+      if (settings?.voice_cloning) {
+        setElevenApiKey(settings.voice_cloning.elevenlabs_api_key || '')
+        setElevenVoiceId(settings.voice_cloning.elevenlabs_voice_id || '21m00Tcm4TlvDq8ikWAM')
+        if (settings.voice_cloning.stability !== undefined) setStability(settings.voice_cloning.stability)
+        if (settings.voice_cloning.similarity_boost !== undefined) setSimilarityBoost(settings.voice_cloning.similarity_boost)
+      }
+    } catch (err) {
+      console.error('Error loading voice samples:', err)
     }
   }
 

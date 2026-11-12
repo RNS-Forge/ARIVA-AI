@@ -30,31 +30,39 @@ export default function ExportPage() {
   }, [])
 
   const initData = async () => {
-    const currentUser = await CloneStore.getCurrentUser()
-    if (!currentUser) {
-      router.push('/login')
-      return
+    try {
+      let currentUser = await CloneStore.getCurrentUser()
+      if (!currentUser && CloneStore.isLoginDisabled()) {
+        currentUser = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!currentUser) {
+        router.push('/login')
+        return
+      }
+      setUser(currentUser)
+
+      const name = currentUser.email.split('@')[0]
+      setCloneName(`${name}'s Clone`)
+      setGreeting(`Hello! I am the digital AI twin of ${name}. Ask me anything about my background, work, or opinions.`)
+      setPreviewMessages([{
+        role: 'clone',
+        content: `Hello! I am the digital AI twin of ${name}. Ask me anything about my background, work, or opinions.`
+      }])
+
+      const [p, s, st] = await Promise.all([
+        CloneStore.getPersonality().catch(() => []),
+        CloneStore.getSocialLinks().catch(() => []),
+        CloneStore.getSettings().catch(() => null),
+      ])
+
+      setPersonality(p)
+      setSocials(s)
+      setSettings(st)
+    } catch (err) {
+      console.error('Error loading export data:', err)
+    } finally {
+      setLoading(false)
     }
-    setUser(currentUser)
-
-    const name = currentUser.email.split('@')[0]
-    setCloneName(`${name}'s Clone`)
-    setGreeting(`Hello! I am the digital AI twin of ${name}. Ask me anything about my background, work, or opinions.`)
-    setPreviewMessages([{
-      role: 'clone',
-      content: `Hello! I am the digital AI twin of ${name}. Ask me anything about my background, work, or opinions.`
-    }])
-
-    const p = await CloneStore.getPersonality()
-    setPersonality(p)
-
-    const s = await CloneStore.getSocialLinks()
-    setSocials(s)
-
-    const st = await CloneStore.getSettings()
-    setSettings(st)
-
-    setLoading(false)
   }
 
   const generateConfigJson = async () => {
@@ -358,6 +366,13 @@ In your site settings under Custom Code (Footer Code):
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin"></div>
           <span className="text-zinc-500 text-sm font-mono">Loading Export Engine...</span>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="text-[11px] text-zinc-500 hover:text-white underline mt-2 transition-colors"
+          >
+            Enter Studio Directly
+          </button>
         </div>
       </div>
     )

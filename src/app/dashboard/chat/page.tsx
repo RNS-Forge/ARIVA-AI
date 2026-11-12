@@ -55,26 +55,32 @@ export default function ChatPage() {
   }
 
   const initChat = async () => {
-    const user = await CloneStore.getCurrentUser()
-    if (!user) {
-      router.push('/login')
-      return
+    try {
+      let user = await CloneStore.getCurrentUser()
+      if (!user && CloneStore.isLoginDisabled()) {
+        user = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      const [st, history, sLinks, pData, prompt] = await Promise.all([
+        CloneStore.getSettings().catch(() => null),
+        CloneStore.getChatHistory().catch(() => []),
+        CloneStore.getSocialLinks().catch(() => []),
+        CloneStore.getPersonality().catch(() => []),
+        CloneStore.generateClonePersonaPrompt().catch(() => ''),
+      ])
+
+      setSettings(st)
+      setMessages(history)
+      setSocials(sLinks)
+      setPersonality(pData)
+      setPersonaPromptText(prompt)
+    } catch (err) {
+      console.error('Error initializing chat:', err)
     }
-
-    const st = await CloneStore.getSettings()
-    setSettings(st)
-
-    const history = await CloneStore.getChatHistory()
-    setMessages(history)
-
-    const sLinks = await CloneStore.getSocialLinks()
-    setSocials(sLinks)
-
-    const pData = await CloneStore.getPersonality()
-    setPersonality(pData)
-
-    const prompt = await CloneStore.generateClonePersonaPrompt()
-    setPersonaPromptText(prompt)
   }
 
   const handleSend = async (e?: React.FormEvent, customText?: string) => {

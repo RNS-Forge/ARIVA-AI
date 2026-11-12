@@ -216,7 +216,8 @@ export const CloneStore = {
         return false
       }
     }
-    return false
+    // Default to true for now since login mode is disabled for the project
+    return true
   },
 
   async getCurrentUser(): Promise<CloneUser | null> {
@@ -234,14 +235,20 @@ export const CloneStore = {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && user.email) {
-        return {
-          id: user.id,
-          email: user.email,
-          isGuest: false,
+      const getUserPromise = supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user && user.email) {
+          return {
+            id: user.id,
+            email: user.email,
+            isGuest: false,
+          }
         }
-      }
+        return null
+      })
+
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
+      const user = await Promise.race([getUserPromise, timeoutPromise])
+      if (user) return user
     } catch {
       // Continue to check local guest
     }

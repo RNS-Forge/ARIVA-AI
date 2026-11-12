@@ -64,28 +64,44 @@ export default function RecruiterPage() {
   }, [chatHistory, activeTab])
 
   const initData = async () => {
-    const currentUser = await CloneStore.getCurrentUser()
-    if (!currentUser) {
-      router.push('/login')
-      return
+    try {
+      let currentUser = await CloneStore.getCurrentUser()
+      if (!currentUser && CloneStore.isLoginDisabled()) {
+        currentUser = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!currentUser) {
+        router.push('/login')
+        return
+      }
+      setUser(currentUser)
+
+      const [settings, storedLeads, storedVoicemails] = await Promise.all([
+        CloneStore.getRecruiterSettings().catch(() => ({
+          target_roles: [],
+          work_preference: 'Remote' as const,
+          min_compensation: '',
+          availability: '',
+          preferred_stack: '',
+          deal_breakers: '',
+        })),
+        CloneStore.getRecruiterLeads().catch(() => []),
+        CloneStore.getVoiceVoicemails().catch(() => []),
+      ])
+
+      setTargetRolesText(settings.target_roles.join(', '))
+      setWorkPreference(settings.work_preference)
+      setMinCompensation(settings.min_compensation)
+      setAvailability(settings.availability)
+      setPreferredStack(settings.preferred_stack)
+      setDealBreakers(settings.deal_breakers)
+
+      setLeads(storedLeads)
+      setVoicemails(storedVoicemails)
+    } catch (err) {
+      console.error('Error initializing recruiter data:', err)
+    } finally {
+      setLoading(false)
     }
-    setUser(currentUser)
-
-    const settings = await CloneStore.getRecruiterSettings()
-    setTargetRolesText(settings.target_roles.join(', '))
-    setWorkPreference(settings.work_preference)
-    setMinCompensation(settings.min_compensation)
-    setAvailability(settings.availability)
-    setPreferredStack(settings.preferred_stack)
-    setDealBreakers(settings.deal_breakers)
-
-    const storedLeads = await CloneStore.getRecruiterLeads()
-    setLeads(storedLeads)
-
-    const storedVoicemails = await CloneStore.getVoiceVoicemails()
-    setVoicemails(storedVoicemails)
-
-    setLoading(false)
   }
 
   const handleSavePreferences = async (e: React.FormEvent) => {
@@ -257,6 +273,13 @@ export default function RecruiterPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin"></div>
           <span className="text-zinc-500 text-sm font-mono">Initializing Recruiter Agent Studio...</span>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="text-[11px] text-zinc-500 hover:text-white underline mt-2 transition-colors"
+          >
+            Enter Studio Directly
+          </button>
         </div>
       </div>
     )

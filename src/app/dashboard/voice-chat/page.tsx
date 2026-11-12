@@ -12,12 +12,20 @@ export default function VoiceChatPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const user = await CloneStore.getCurrentUser()
-      if (!user) {
-        router.push('/login')
-        return
+      try {
+        let user = await CloneStore.getCurrentUser()
+        if (!user && CloneStore.isLoginDisabled()) {
+          user = await CloneStore.loginAsGuest('creator@saruto.local')
+        }
+        if (!user) {
+          router.push('/login')
+          return
+        }
+      } catch (err) {
+        console.error('Error checking user for voice chat:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     checkUser()
@@ -29,6 +37,13 @@ export default function VoiceChatPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin"></div>
           <span className="text-zinc-500 text-sm font-mono">Initializing LiveKit Audio Stream...</span>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="text-[11px] text-zinc-500 hover:text-white underline mt-2 transition-colors"
+          >
+            Enter Studio Directly
+          </button>
         </div>
       </div>
     )

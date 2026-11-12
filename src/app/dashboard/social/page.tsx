@@ -34,19 +34,28 @@ export default function SocialPage() {
   }, [])
 
   const loadAll = async () => {
-    const user = await CloneStore.getCurrentUser()
-    if (!user) {
-      router.push('/login')
-      return
+    try {
+      let user = await CloneStore.getCurrentUser()
+      if (!user && CloneStore.isLoginDisabled()) {
+        user = await CloneStore.loginAsGuest('creator@saruto.local')
+      }
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      const [sLinks, kSnippets] = await Promise.all([
+        CloneStore.getSocialLinks().catch(() => []),
+        CloneStore.getKnowledgeSnippets().catch(() => []),
+      ])
+
+      setLinks(sLinks)
+      setSnippets(kSnippets)
+
+      generateBioSummary(sLinks, kSnippets)
+    } catch (err) {
+      console.error('Error loading social profiles:', err)
     }
-
-    const sLinks = await CloneStore.getSocialLinks()
-    setLinks(sLinks)
-
-    const kSnippets = await CloneStore.getKnowledgeSnippets()
-    setSnippets(kSnippets)
-
-    generateBioSummary(sLinks, kSnippets)
   }
 
   const generateBioSummary = async (sLinks: SocialLink[], kSnippets: KnowledgeSnippet[]) => {

@@ -29,44 +29,86 @@ export default function DashboardPage() {
   const loginDisabled = CloneStore.isLoginDisabled()
 
   useEffect(() => {
+    let active = true
+
     const init = async () => {
-      const currentUser = await CloneStore.getCurrentUser()
-      if (!currentUser) {
-        router.push('/login')
-        return
+      try {
+        let currentUser = await CloneStore.getCurrentUser()
+        if (!currentUser && CloneStore.isLoginDisabled()) {
+          currentUser = await CloneStore.loginAsGuest('creator@saruto.local')
+        }
+
+        if (!active) return
+
+        if (!currentUser) {
+          router.push('/login')
+          return
+        }
+
+        setUser(currentUser)
+
+        const [
+          prog,
+          pList,
+          vList,
+          sList,
+          lList,
+          rList,
+          vListAsync,
+        ] = await Promise.all([
+          CloneStore.calculateProgress().catch(() => ({
+            personality_percentage: 0,
+            voice_percentage: 0,
+            knowledge_percentage: 0,
+            overall_percentage: 0,
+            fidelity_status: 'Nascent Stage',
+          })),
+          CloneStore.getPersonality().catch(() => []),
+          CloneStore.getVoiceSamples().catch(() => []),
+          CloneStore.getSocialLinks().catch(() => []),
+          CloneStore.getRecruiterLeads().catch(() => []),
+          CloneStore.getIngestedRepositories().catch(() => []),
+          CloneStore.getVoiceVoicemails().catch(() => []),
+        ])
+
+        if (!active) return
+
+        setProgress(prog)
+        setPersonalityCount(pList.length)
+        if (pList.length > 0) {
+          setLatestTrait(pList[0])
+        }
+
+        setVoiceCount(vList.length)
+        const totalSec = vList.reduce((acc, curr) => acc + (curr.duration_seconds || 0), 0)
+        setVoiceDuration(totalSec)
+
+        setSocialCount(sList.length)
+        setLeadsCount(lList.length)
+        setRepoCount(rList.length)
+        setVoicemailCount(vListAsync.length)
+      } catch (err) {
+        console.error('Error loading clone dashboard:', err)
+      } finally {
+        if (active) {
+          setLoading(false)
+        }
       }
-      setUser(currentUser)
-
-      const prog = await CloneStore.calculateProgress()
-      setProgress(prog)
-
-      const pList = await CloneStore.getPersonality()
-      setPersonalityCount(pList.length)
-      if (pList.length > 0) {
-        setLatestTrait(pList[0])
-      }
-
-      const vList = await CloneStore.getVoiceSamples()
-      setVoiceCount(vList.length)
-      const totalSec = vList.reduce((acc, curr) => acc + (curr.duration_seconds || 0), 0)
-      setVoiceDuration(totalSec)
-
-      const sList = await CloneStore.getSocialLinks()
-      setSocialCount(sList.length)
-
-      const lList = await CloneStore.getRecruiterLeads()
-      setLeadsCount(lList.length)
-
-      const rList = await CloneStore.getIngestedRepositories()
-      setRepoCount(rList.length)
-
-      const vListAsync = await CloneStore.getVoiceVoicemails()
-      setVoicemailCount(vListAsync.length)
-
-      setLoading(false)
     }
 
     init()
+
+    // Safety fallback: guaranteed unstick after 1.5 seconds under any network condition
+    const safetyTimer = setTimeout(() => {
+      if (active) {
+        setLoading(false)
+      }
+    }, 1500)
+
+    return () => {
+      active = false
+      clearTimeout(safetyTimer)
+    }
   }, [router])
 
   const handleLogout = async () => {
@@ -148,6 +190,13 @@ CREATE TABLE IF NOT EXISTS chat_history (
         <div className="flex flex-col items-center gap-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin"></div>
           <span className="text-zinc-500 text-sm">Loading clone architecture...</span>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="text-[11px] text-zinc-500 hover:text-white underline mt-2 transition-colors"
+          >
+            Enter Dashboard Directly
+          </button>
         </div>
       </div>
     )
